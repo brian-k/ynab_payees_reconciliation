@@ -1,6 +1,10 @@
 import requests
 import os
 import csv
+import json
+import io
+import pandas as pd
+import numpy as np
 
 YNAB_API_KEY = os.environ['YNAB_API_KEY']
 BUDGET_ID = os.environ['BUDGET_ID']
@@ -15,7 +19,7 @@ def get_payees():
     response = requests.get(url, headers=headers)
     
     if response.status_code == 200:
-        payees = response.json().get('data', {}).get('payees', [])
+        payees = pd.DataFrame.from_dict(response.json().get('data', {}).get('payees', []))
         return payees
     else:
         print(f'Error: {response.status_code} - {response.text}')
@@ -38,15 +42,18 @@ def update_payee(payee_id, new_name):
 
 # Retrieve and print payees
 payees = get_payees()
-with open('ynab_payees.csv', 'w', newline='') as csvfile:
-    payee_writer = csv.DictWriter(csvfile, dialect='excel', fieldnames = ['id', 'name', 'transfer_account_id', 'deleted'])
-    payee_writer.writeheader()
+payees_orig = payees.copy(deep=True)
 
-    for payee in payees:
-        payee_writer.writerow(payee)
-        #print(f'ID: {payee["id"]}, Name: {payee["name"]}')
+# remove all rows with account_transfer_id
+payees = payees[payees['transfer_account_id'].isnull()]
+
+# Drop the account_transfer_id and deleted columns
+payees = payees.drop(columns=['transfer_account_id', 'deleted'])
+
+# write the DataFrame to CSV
+payees.to_csv('ynab_payees.csv', index=False)
 
 # Example: Update the first payee in the list
-if payees:
-    first_payee_id = payees[0]['id']
-    update_payee(payee_id=first_payee_id, new_name='Updated Payee Name')
+#if payees:
+#    first_payee_id = payees[0]['id']
+#    update_payee(payee_id=first_payee_id, new_name='Updated Payee Name')
