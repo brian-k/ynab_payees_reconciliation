@@ -1,10 +1,6 @@
 import requests
 import os
-import csv
-import json
-import io
 import pandas as pd
-import numpy as np
 
 YNAB_API_KEY = os.environ['YNAB_API_KEY']
 BUDGET_ID = os.environ['BUDGET_ID']
